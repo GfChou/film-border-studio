@@ -7,6 +7,23 @@ const frames = {
   '67': ['100tmx', 'e100', 'e100vs', 'rdpiii', 'rvp50', 'ultra100'],
 };
 
+const filmNames = {
+  '100tmx': 'KODAK PROFESSIONAL T-MAX 100 Film',
+  '5294': 'KODAK EKTACHROME 100D Color Reversal Film 5294',
+  'cinestill800t': 'CineStill 800Tungsten Color Negative Film',
+  'e100': 'KODAK PROFESSIONAL EKTACHROME E100 Color Reversal Film',
+  'e100vs': 'KODAK PROFESSIONAL EKTACHROME E100VS Color Reversal Film',
+  'ektar100': 'KODAK PROFESSIONAL EKTAR 100 Film',
+  'gold200': 'KODAK GOLD 200 Film',
+  'phoenix200ii': 'HARMAN Phoenix II 200 Color Film',
+  'portra160': 'KODAK PROFESSIONAL PORTRA 160 Film',
+  'rdpiii': 'FUJICHROME PROVIA 100F Professional',
+  'rvp100': 'FUJICHROME Velvia 100 Professional',
+  'rvp50': 'FUJICHROME Velvia 50 Professional',
+  'ultra100': 'KODAK PROFESSIONAL Ultra Color 100UC Film',
+  'ultramax400': 'KODAK ULTRAMAX 400 Film',
+};
+
 const apertures = {
   '135': { width: 6000, height: 4000, x: 120, y: 820 },
   '645': { width: 6000, height: 4500, x: 240, y: 240 },
@@ -124,6 +141,17 @@ function frameUrl(format, film) {
   return `${import.meta.env.BASE_URL}frames/${format}/${film}_${format}.png`;
 }
 
+function filmDisplayName(film) {
+  return filmNames[film] || film;
+}
+
+function safeFilmName(film) {
+  return filmDisplayName(film)
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+}
+
 function shouldUsePortraitFrame() {
   return state.format !== '66' && state.orientation === 'portrait';
 }
@@ -174,7 +202,7 @@ function renderControls() {
   )).join('');
 
   filmSelect.innerHTML = frames[state.format].map((film) => (
-    `<option value="${film}" ${state.film === film ? 'selected' : ''}>${film}</option>`
+    `<option value="${film}" ${state.film === film ? 'selected' : ''}>${filmDisplayName(film)}</option>`
   )).join('');
 }
 
@@ -219,7 +247,7 @@ async function drawPreview() {
   if (!state.sourceBitmap) return;
 
   const baseAperture = apertures[state.format];
-  previewTitle.textContent = `${state.format} · ${state.film}`;
+  previewTitle.textContent = `${state.format} · ${filmDisplayName(state.film)}`;
   previewMeta.textContent = `${baseAperture.width} x ${baseAperture.height}`;
   setStatus('正在加载边框素材...');
 
@@ -306,7 +334,7 @@ async function exportImage() {
   const link = document.createElement('a');
   const original = state.imageFile?.name?.replace(/\.[^.]+$/, '') || 'photo';
   link.href = url;
-  link.download = `${original}_${state.format}_${state.film}.${exportExtension(type)}`;
+  link.download = `${original}_${state.format}_${safeFilmName(state.film)}.${exportExtension(type)}`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -353,7 +381,7 @@ async function exportSixteenBitPng() {
     const link = document.createElement('a');
     const original = state.imageFile?.name?.replace(/\.[^.]+$/, '') || 'photo';
     link.href = url;
-    link.download = `${original}_${state.format}_${state.film}_16bit.png`;
+    link.download = `${original}_${state.format}_${safeFilmName(state.film)}_16bit.png`;
     document.body.appendChild(link);
     link.click();
     link.remove();
