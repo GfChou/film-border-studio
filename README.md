@@ -10,7 +10,16 @@
 - 自动按画幅比例居中裁切照片
 - 导出 PNG、JPEG、WebP
 - JPEG/WebP 支持三档画质，PNG 为无损
+- 额外提供浏览器本地 `16-bit PNG` 导出
 
 ## HDR 说明
 
-GitHub Pages 是纯静态托管，浏览器端 Canvas 对 HDR、16-bit、HEIC/TIFF 等格式的保真读写取决于用户浏览器。本站会尽量使用浏览器支持的宽色域 Canvas；如果浏览器不支持，对应图片会按浏览器能力降级导出。
+普通 PNG、JPEG、WebP 导出使用浏览器 Canvas。
+
+`16-bit PNG` 导出使用独立 Worker 管线，不通过 `canvas.toBlob()`：
+
+- PNG16 输入会按 16-bit 像素读取、裁切、缩放、合成并导出 PNG16
+- 常见 16-bit RGB/灰度 TIFF 会尽量按原始 16-bit 样本读取
+- 其它浏览器只能解码为 8-bit 的格式会先按浏览器结果读取，再写成 PNG16
+
+GitHub Pages 是纯静态托管，完整 HDR 元数据、ICC、PQ/HLG/AVIF 的保真仍取决于浏览器解码能力和前端库支持。这个站点不会上传照片，所有处理都在用户自己的浏览器里完成。

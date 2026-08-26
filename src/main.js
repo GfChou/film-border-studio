@@ -25,6 +25,7 @@ const state = {
   film: 'rdpiii',
   quality: 'high',
   exportType: 'image/png',
+  exportEngine: 'canvas',
   imageFile: null,
   sourceBitmap: null,
   frameBitmap: null,
@@ -71,6 +72,7 @@ app.innerHTML = `
           <label><input type="radio" name="exportType" value="image/png" checked />PNG</label>
           <label><input type="radio" name="exportType" value="image/jpeg" />JPEG</label>
           <label><input type="radio" name="exportType" value="image/webp" />WebP</label>
+          <label><input type="radio" name="exportType" value="image/png16" />16-bit PNG</label>
         </div>
       </div>
 
@@ -208,6 +210,7 @@ function supportsWideGamut() {
 }
 
 function exportExtension(type) {
+  if (type === 'image/png16') return 'png';
   if (type === 'image/jpeg') return 'jpg';
   if (type === 'image/webp') return 'webp';
   return 'png';
@@ -229,6 +232,11 @@ async function exportImage() {
   setStatus('正在导出...');
   const quality = qualityPresets[state.quality].value;
   const type = state.exportType;
+  if (type === 'image/png16') {
+    await exportSixteenBitPng();
+    exportButton.disabled = false;
+    return;
+  }
   const blob = await canvasToBlob(canvas, type, quality);
   if (!blob) {
     setStatus('当前浏览器不支持所选导出格式。');
@@ -246,6 +254,54 @@ async function exportImage() {
   URL.revokeObjectURL(url);
   setStatus('已导出。');
   exportButton.disabled = false;
+}
+
+function runHighDepthExport(payload) {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('./worker-16bit.js', import.meta.url), { type: 'module' });
+    worker.onmessage = (event) => {
+      const { type, message, blob } = event.data;
+      if (type === 'progress') setStatus(message);
+      if (type === 'done') {
+        worker.terminate();
+        resolve(blob);
+      }
+      if (type === 'error') {
+        worker.terminate();
+        reject(new Error(message));
+      }
+    };
+    worker.onerror = (event) => {
+      worker.terminate();
+      reject(new Error(event.message || '16-bit 导出失败'));
+    };
+    worker.postMessage(payload, [payload.sourceBuffer]);
+  });
+}
+
+async function exportSixteenBitPng() {
+  try {
+    const aperture = apertures[state.format];
+    const sourceBuffer = await state.imageFile.arrayBuffer();
+    const blob = await runHighDepthExport({
+      sourceBuffer,
+      sourceType: state.imageFile.type,
+      frameUrl: frameUrl(state.format, state.film),
+      aperture,
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const original = state.imageFile?.name?.replace(/\.[^.]+$/, '') || 'photo';
+    link.href = url;
+    link.download = `${original}_${state.format}_${state.film}_16bit.png`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setStatus('已导出 16-bit PNG。');
+  } catch (error) {
+    setStatus(`16-bit PNG 导出失败：${error.message}`);
+  }
 }
 
 formatButtons.addEventListener('click', async (event) => {
@@ -274,6 +330,10 @@ filmSelect.addEventListener('change', async () => {
 document.querySelectorAll('input[name="exportType"]').forEach((input) => {
   input.addEventListener('change', () => {
     state.exportType = input.value;
+    if (state.exportType === 'image/png16') {
+      state.quality = 'lossless';
+      renderControls();
+    }
   });
 });
 
@@ -294,4 +354,4 @@ fileInput.addEventListener('change', async () => {
 exportButton.addEventListener('click', exportImage);
 
 renderControls();
-setStatus('PNG 为无损导出；JPEG 和 WebP 使用三档质量。HDR 保留取决于浏览器对导入格式和 Canvas 导出的支持。');
+setStatus('普通导出走 Canvas；16-bit PNG 会在浏览器本地用独立像素管线合成，PNG16 输入可保留 16-bit 像素精度。');
