@@ -117,6 +117,38 @@ function frameUrl(format, film) {
   return `${import.meta.env.BASE_URL}frames/${format}/${film}_${format}.png`;
 }
 
+function shouldUsePortraitFrame(source) {
+  return state.format !== '66' && source && source.height > source.width;
+}
+
+function rotateApertureClockwise(aperture, frameWidth, frameHeight) {
+  return {
+    width: aperture.height,
+    height: aperture.width,
+    x: frameHeight - aperture.y - aperture.height,
+    y: aperture.x,
+  };
+}
+
+function effectiveLayout(source, frame) {
+  const baseAperture = apertures[state.format];
+  const rotateFrame = shouldUsePortraitFrame(source);
+  if (!rotateFrame) {
+    return {
+      aperture: baseAperture,
+      outputWidth: frame.width,
+      outputHeight: frame.height,
+      rotateFrame: false,
+    };
+  }
+  return {
+    aperture: rotateApertureClockwise(baseAperture, frame.width, frame.height),
+    outputWidth: frame.height,
+    outputHeight: frame.width,
+    rotateFrame: true,
+  };
+}
+
 function renderControls() {
   formatButtons.innerHTML = Object.keys(frames).map((format) => (
     `<button type="button" class="${state.format === format ? 'active' : ''}" data-format="${format}">${format}</button>`
@@ -171,14 +203,17 @@ async function drawPreview() {
   exportButton.disabled = true;
   if (!state.sourceBitmap) return;
 
-  const aperture = apertures[state.format];
+  const baseAperture = apertures[state.format];
   previewTitle.textContent = `${state.format} · ${state.film}`;
-  previewMeta.textContent = `${aperture.width} x ${aperture.height}`;
+  previewMeta.textContent = `${baseAperture.width} x ${baseAperture.height}`;
   setStatus('正在加载边框素材...');
 
   state.frameBitmap = await loadBitmapFromUrl(frameUrl(state.format, state.film));
-  canvas.width = state.frameBitmap.width;
-  canvas.height = state.frameBitmap.height;
+  const layout = effectiveLayout(state.sourceBitmap, state.frameBitmap);
+  const aperture = layout.aperture;
+  canvas.width = layout.outputWidth;
+  canvas.height = layout.outputHeight;
+  previewMeta.textContent = `${aperture.width} x ${aperture.height}${layout.rotateFrame ? ' · 竖版边框' : ''}`;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   const crop = cropSourceRect(state.sourceBitmap, aperture.width / aperture.height);
@@ -193,7 +228,15 @@ async function drawPreview() {
     aperture.width,
     aperture.height,
   );
-  ctx.drawImage(state.frameBitmap, 0, 0);
+  if (layout.rotateFrame) {
+    ctx.save();
+    ctx.translate(canvas.width, 0);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(state.frameBitmap, 0, 0);
+    ctx.restore();
+  } else {
+    ctx.drawImage(state.frameBitmap, 0, 0);
+  }
 
   if (!canvas.parentNode) {
     stage.innerHTML = '';
@@ -201,8 +244,9 @@ async function drawPreview() {
   }
 
   exportButton.disabled = false;
-  const hdrNote = supportsWideGamut() ? '当前浏览器支持宽色域显示；HDR/16-bit 导出受浏览器 Canvas 能力限制。' : '当前浏览器未报告宽色域支持；HDR 会按浏览器能力降级。';
-  setStatus(hdrNote);
+  const orientationNote = layout.rotateFrame ? '已按竖版照片顺时针旋转边框。' : '当前使用横版边框。';
+  const hdrNote = supportsWideGamut() ? '当前浏览器支持宽色域显示。' : '当前浏览器未报告宽色域支持；HDR 会按浏览器能力降级。';
+  setStatus(`${orientationNote} ${hdrNote}`);
 }
 
 function supportsWideGamut() {
@@ -281,13 +325,14 @@ function runHighDepthExport(payload) {
 
 async function exportSixteenBitPng() {
   try {
-    const aperture = apertures[state.format];
+    const layout = effectiveLayout(state.sourceBitmap, state.frameBitmap);
     const sourceBuffer = await state.imageFile.arrayBuffer();
     const blob = await runHighDepthExport({
       sourceBuffer,
       sourceType: state.imageFile.type,
       frameUrl: frameUrl(state.format, state.film),
-      aperture,
+      aperture: layout.aperture,
+      rotateFrame: layout.rotateFrame,
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

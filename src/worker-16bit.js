@@ -5,13 +5,14 @@ const UTIF = UTIFModule.default || UTIFModule;
 
 self.onmessage = async (event) => {
   try {
-    const { sourceBuffer, sourceType, frameUrl, aperture } = event.data;
+    const { sourceBuffer, sourceType, frameUrl, aperture, rotateFrame } = event.data;
     progress('正在解码原图...');
     const source = await decodeSource(new Uint8Array(sourceBuffer), sourceType);
 
     progress('正在解码 16-bit 边框...');
     const frameBytes = new Uint8Array(await (await fetch(frameUrl)).arrayBuffer());
-    const frame = toRgba16(decode(frameBytes));
+    const baseFrame = toRgba16(decode(frameBytes));
+    const frame = rotateFrame ? rotateRgba16Clockwise(baseFrame) : baseFrame;
 
     progress('正在按画幅裁切并缩放...');
     const crop = cropRect(source.width, source.height, aperture.width / aperture.height);
@@ -143,6 +144,25 @@ function toRgba16(image) {
     }
   }
   return { width, height, data: out, depth: 16 };
+}
+
+function rotateRgba16Clockwise(image) {
+  const out = new Uint16Array(image.width * image.height * 4);
+  const newWidth = image.height;
+  const newHeight = image.width;
+  for (let y = 0; y < image.height; y += 1) {
+    for (let x = 0; x < image.width; x += 1) {
+      const src = (y * image.width + x) * 4;
+      const nx = image.height - 1 - y;
+      const ny = x;
+      const dst = (ny * newWidth + nx) * 4;
+      out[dst] = image.data[src];
+      out[dst + 1] = image.data[src + 1];
+      out[dst + 2] = image.data[src + 2];
+      out[dst + 3] = image.data[src + 3];
+    }
+  }
+  return { width: newWidth, height: newHeight, data: out, depth: image.depth };
 }
 
 function rgba8To16(image) {
