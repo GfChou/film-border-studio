@@ -112,6 +112,10 @@ button {
   grid-template-columns: repeat(3, 1fr);
 }
 
+.orientation {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .segmented button,
 .qualities button {
   min-height: 38px;
@@ -125,6 +129,11 @@ button {
 .qualities button.active {
   background: #171717;
   color: #fff;
+}
+
+.segmented button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
 }
 
 select {

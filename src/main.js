@@ -26,6 +26,7 @@ const state = {
   quality: 'high',
   exportType: 'image/png',
   exportEngine: 'canvas',
+  orientation: 'landscape',
   imageFile: null,
   sourceBitmap: null,
   frameBitmap: null,
@@ -54,6 +55,11 @@ app.innerHTML = `
       <div class="control">
         <div class="section-title">画幅</div>
         <div class="segmented" id="formatButtons"></div>
+      </div>
+
+      <div class="control">
+        <div class="section-title">方向</div>
+        <div class="segmented orientation" id="orientationButtons"></div>
       </div>
 
       <div class="control">
@@ -96,6 +102,7 @@ app.innerHTML = `
 `;
 
 const formatButtons = document.querySelector('#formatButtons');
+const orientationButtons = document.querySelector('#orientationButtons');
 const filmSelect = document.querySelector('#filmSelect');
 const qualityButtons = document.querySelector('#qualityButtons');
 const fileInput = document.querySelector('#fileInput');
@@ -117,8 +124,8 @@ function frameUrl(format, film) {
   return `${import.meta.env.BASE_URL}frames/${format}/${film}_${format}.png`;
 }
 
-function shouldUsePortraitFrame(source) {
-  return state.format !== '66' && source && source.height > source.width;
+function shouldUsePortraitFrame() {
+  return state.format !== '66' && state.orientation === 'portrait';
 }
 
 function rotateApertureClockwise(aperture, frameWidth, frameHeight) {
@@ -130,9 +137,9 @@ function rotateApertureClockwise(aperture, frameWidth, frameHeight) {
   };
 }
 
-function effectiveLayout(source, frame) {
+function effectiveLayout(frame) {
   const baseAperture = apertures[state.format];
-  const rotateFrame = shouldUsePortraitFrame(source);
+  const rotateFrame = shouldUsePortraitFrame();
   if (!rotateFrame) {
     return {
       aperture: baseAperture,
@@ -156,6 +163,14 @@ function renderControls() {
 
   qualityButtons.innerHTML = Object.entries(qualityPresets).map(([key, preset]) => (
     `<button type="button" class="${state.quality === key ? 'active' : ''}" data-quality="${key}">${preset.label}</button>`
+  )).join('');
+
+  const effectiveOrientation = state.format === '66' ? 'landscape' : state.orientation;
+  orientationButtons.innerHTML = [
+    ['landscape', '横向'],
+    ['portrait', '竖向'],
+  ].map(([key, label]) => (
+    `<button type="button" class="${effectiveOrientation === key ? 'active' : ''}" data-orientation="${key}" ${state.format === '66' && key === 'portrait' ? 'disabled' : ''}>${label}</button>`
   )).join('');
 
   filmSelect.innerHTML = frames[state.format].map((film) => (
@@ -209,7 +224,7 @@ async function drawPreview() {
   setStatus('正在加载边框素材...');
 
   state.frameBitmap = await loadBitmapFromUrl(frameUrl(state.format, state.film));
-  const layout = effectiveLayout(state.sourceBitmap, state.frameBitmap);
+  const layout = effectiveLayout(state.frameBitmap);
   const aperture = layout.aperture;
   canvas.width = layout.outputWidth;
   canvas.height = layout.outputHeight;
@@ -244,7 +259,7 @@ async function drawPreview() {
   }
 
   exportButton.disabled = false;
-  const orientationNote = layout.rotateFrame ? '已按竖版照片顺时针旋转边框。' : '当前使用横版边框。';
+  const orientationNote = layout.rotateFrame ? '已使用竖向边框。' : '当前使用横向边框。';
   const hdrNote = supportsWideGamut() ? '当前浏览器支持宽色域显示。' : '当前浏览器未报告宽色域支持；HDR 会按浏览器能力降级。';
   setStatus(`${orientationNote} ${hdrNote}`);
 }
@@ -325,7 +340,7 @@ function runHighDepthExport(payload) {
 
 async function exportSixteenBitPng() {
   try {
-    const layout = effectiveLayout(state.sourceBitmap, state.frameBitmap);
+    const layout = effectiveLayout(state.frameBitmap);
     const sourceBuffer = await state.imageFile.arrayBuffer();
     const blob = await runHighDepthExport({
       sourceBuffer,
@@ -365,6 +380,14 @@ qualityButtons.addEventListener('click', (event) => {
   if (!button) return;
   state.quality = button.dataset.quality;
   renderControls();
+});
+
+orientationButtons.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-orientation]');
+  if (!button || button.disabled) return;
+  state.orientation = button.dataset.orientation;
+  renderControls();
+  await drawPreview();
 });
 
 filmSelect.addEventListener('change', async () => {
