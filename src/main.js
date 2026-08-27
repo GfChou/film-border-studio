@@ -41,7 +41,6 @@ app.innerHTML = `
     <aside class="panel">
       <div class="brand">
         <img src="${import.meta.env.BASE_URL}brand/film-border-studio-logo.png" alt="Film Border Studio" />
-        <p>导入照片，套用已制作的胶片边框，并按所选画幅自动居中裁切。</p>
       </div>
 
       <div class="control">

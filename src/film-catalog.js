@@ -6,7 +6,7 @@ export const manufacturers = [
 ];
 
 const packageArt = (filename, groups) => Object.fromEntries(
-  groups.map((group) => [group, `packages/hand-painted/${group}/${filename}.png`]),
+  groups.map((group) => [group, `packages/hand-painted/${group}/${filename}.webp`]),
 );
 
 const model = (modelId, manufacturerId, name, shortName, details, formats, packageImages) => ({
@@ -23,6 +23,12 @@ export const filmCatalog = [
   model('100tmx', 'kodak', 'KODAK PROFESSIONAL T-MAX 100 Film', 'T-MAX 100', '黑白负片 · ISO 100', {
     645: ['0'], 66: ['0'], 67: ['0'], 68: ['0'], 69: ['0'],
   }, packageArt('tmax100', ['120'])),
+  model('5203', 'kodak', 'KODAK VISION3 50D Color Negative Film 5203', 'VISION3 50D 5203', '电影彩色负片 · ISO 50', {
+    135: ['0'],
+  }, packageArt('5203', ['135'])),
+  model('5219', 'kodak', 'KODAK VISION3 500T Color Negative Film 5219', 'VISION3 500T 5219', '电影彩色负片 · ISO 500', {
+    135: ['0'],
+  }, packageArt('5219', ['135'])),
   model('5294', 'kodak', 'KODAK EKTACHROME 100D Color Reversal Film 5294', 'EKTACHROME 100D 5294', '电影彩色反转片 · ISO 100', {
     135: ['0', '1'],
   }, packageArt('5294', ['135'])),

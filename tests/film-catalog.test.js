@@ -22,14 +22,27 @@ test('catalog exposes CineStill and E100 frame variants', () => {
   assert.deepEqual(e100.versions.map((version) => version.versionId), ['0', '1']);
 });
 
-test('catalog resolves illustrated package art for the active film format', () => {
+test('catalog resolves optimized hand-painted package art for the active film format', () => {
   const provia135 = getModels('135', 'fujifilm').find((model) => model.modelId === 'rdpiii');
   const provia120 = getModels('67', 'fujifilm').find((model) => model.modelId === 'rdpiii');
   const ultra120 = getModels('67', 'kodak').find((model) => model.modelId === 'ultra100');
 
-  assert.equal(provia135.packageImage, 'packages/hand-painted/135/provia100f.png');
-  assert.equal(provia120.packageImage, 'packages/hand-painted/120/provia100f.png');
+  assert.equal(provia135.packageImage, 'packages/hand-painted/135/provia100f.webp');
+  assert.equal(provia120.packageImage, 'packages/hand-painted/120/provia100f.webp');
   assert.equal(ultra120.packageImage, null);
+});
+
+test('catalog exposes Kodak VISION3 5203 and 5219 frames', () => {
+  const kodak135 = getModels('135', 'kodak');
+  const daylight = kodak135.find((model) => model.modelId === '5203');
+  const tungsten = kodak135.find((model) => model.modelId === '5219');
+
+  assert.equal(daylight.shortName, 'VISION3 50D 5203');
+  assert.equal(daylight.versions[0].framePath, 'frames/135/5203-0.png');
+  assert.equal(daylight.packageImage, 'packages/hand-painted/135/5203.webp');
+  assert.equal(tungsten.shortName, 'VISION3 500T 5219');
+  assert.equal(tungsten.versions[0].framePath, 'frames/135/5219-0.png');
+  assert.equal(tungsten.packageImage, 'packages/hand-painted/135/5219.webp');
 });
 
 test('catalog exposes every 67 master in 68 and 69 formats', () => {
