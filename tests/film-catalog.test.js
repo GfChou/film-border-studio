@@ -22,6 +22,16 @@ test('catalog exposes CineStill and E100 frame variants', () => {
   assert.deepEqual(e100.versions.map((version) => version.versionId), ['0', '1']);
 });
 
+test('catalog resolves illustrated package art for the active film format', () => {
+  const provia135 = getModels('135', 'fujifilm').find((model) => model.modelId === 'rdpiii');
+  const provia120 = getModels('67', 'fujifilm').find((model) => model.modelId === 'rdpiii');
+  const ultra120 = getModels('67', 'kodak').find((model) => model.modelId === 'ultra100');
+
+  assert.equal(provia135.packageImage, 'packages/illustrated/135/provia100f.png');
+  assert.equal(provia120.packageImage, 'packages/illustrated/120/provia100f.png');
+  assert.equal(ultra120.packageImage, null);
+});
+
 test('catalog exposes every 67 master in 68 and 69 formats', () => {
   const e10068 = getModels('68', 'kodak').find((model) => model.modelId === 'e100');
   const e10069 = getModels('69', 'kodak').find((model) => model.modelId === 'e100');

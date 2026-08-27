@@ -12,7 +12,7 @@ for (const manufacturer of manufacturers) {
 }
 
 for (const film of filmCatalog) {
-  if (film.packageImage) expected.add(film.packageImage);
+  for (const packageImage of Object.values(film.packageImages)) expected.add(packageImage);
   for (const [format, versions] of Object.entries(film.formats)) {
     for (const versionId of versions) {
       expected.add(`frames/${format}/${film.modelId}-${versionId}.png`);
