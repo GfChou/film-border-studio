@@ -1,28 +1,8 @@
 import './styles.css';
+import { normalizeFilmSelection, resolveFilm } from './film-catalog.js';
+import { renderFilmPicker } from './film-picker.js';
 
-const frames = {
-  '135': ['5294', 'cinestill800t', 'e100vs', 'ektar100', 'gold200', 'phoenix200ii', 'portra160', 'rdpiii', 'rvp100', 'rvp50', 'ultramax400'],
-  '645': ['100tmx', 'e100', 'e100vs', 'rdpiii', 'rvp50', 'ultra100'],
-  '66': ['100tmx', 'e100', 'e100vs', 'rdpiii', 'rvp50', 'ultra100'],
-  '67': ['100tmx', 'e100', 'e100vs', 'rdpiii', 'rvp50', 'ultra100'],
-};
-
-const filmNames = {
-  '100tmx': 'KODAK PROFESSIONAL T-MAX 100 Film',
-  '5294': 'KODAK EKTACHROME 100D Color Reversal Film 5294',
-  'cinestill800t': 'CineStill 800Tungsten Color Negative Film',
-  'e100': 'KODAK PROFESSIONAL EKTACHROME E100 Color Reversal Film',
-  'e100vs': 'KODAK PROFESSIONAL EKTACHROME E100VS Color Reversal Film',
-  'ektar100': 'KODAK PROFESSIONAL EKTAR 100 Film',
-  'gold200': 'KODAK GOLD 200 Film',
-  'phoenix200ii': 'HARMAN Phoenix II 200 Color Film',
-  'portra160': 'KODAK PROFESSIONAL PORTRA 160 Film',
-  'rdpiii': 'FUJICHROME PROVIA 100F Professional',
-  'rvp100': 'FUJICHROME Velvia 100 Professional',
-  'rvp50': 'FUJICHROME Velvia 50 Professional',
-  'ultra100': 'KODAK PROFESSIONAL Ultra Color 100UC Film',
-  'ultramax400': 'KODAK ULTRAMAX 400 Film',
-};
+const formats = ['135', '645', '66', '67'];
 
 const apertures = {
   '135': { width: 6000, height: 4000, x: 120, y: 820 },
@@ -39,7 +19,9 @@ const qualityPresets = {
 
 const state = {
   format: '67',
-  film: 'rdpiii',
+  manufacturerId: 'fujifilm',
+  modelId: 'rdpiii',
+  versionId: '0',
   quality: 'high',
   exportType: 'image/png',
   exportEngine: 'canvas',
@@ -54,7 +36,7 @@ app.innerHTML = `
   <div class="app">
     <aside class="panel">
       <div class="brand">
-        <h1>Film Border Studio</h1>
+        <img src="${import.meta.env.BASE_URL}brand/film-border-studio-logo.png" alt="Film Border Studio" />
         <p>导入照片，套用已制作的胶片边框，并按所选画幅自动居中裁切。</p>
       </div>
 
@@ -80,8 +62,8 @@ app.innerHTML = `
       </div>
 
       <div class="control">
-        <label for="filmSelect">胶片</label>
-        <select id="filmSelect"></select>
+        <div class="section-title">胶片</div>
+        <div id="filmPicker" class="film-picker"></div>
       </div>
 
       <div class="control">
@@ -120,7 +102,7 @@ app.innerHTML = `
 
 const formatButtons = document.querySelector('#formatButtons');
 const orientationButtons = document.querySelector('#orientationButtons');
-const filmSelect = document.querySelector('#filmSelect');
+const filmPicker = document.querySelector('#filmPicker');
 const qualityButtons = document.querySelector('#qualityButtons');
 const fileInput = document.querySelector('#fileInput');
 const fileName = document.querySelector('#fileName');
@@ -132,21 +114,18 @@ const previewMeta = document.querySelector('#previewMeta');
 
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d', { colorSpace: 'display-p3' }) || canvas.getContext('2d');
+let frameLoadRequestId = 0;
 
 function setStatus(message) {
   statusEl.textContent = message;
 }
 
-function frameUrl(format, film) {
-  return `${import.meta.env.BASE_URL}frames/${format}/${film}_${format}.png`;
+function frameUrl() {
+  return `${import.meta.env.BASE_URL}${resolveFilm(state).framePath}`;
 }
 
-function filmDisplayName(film) {
-  return filmNames[film] || film;
-}
-
-function safeFilmName(film) {
-  return filmDisplayName(film)
+function safeFilmName() {
+  return resolveFilm(state).shortName
     .replace(/[^a-z0-9]+/gi, '-')
     .replace(/^-|-$/g, '')
     .toLowerCase();
@@ -185,7 +164,7 @@ function effectiveLayout(frame) {
 }
 
 function renderControls() {
-  formatButtons.innerHTML = Object.keys(frames).map((format) => (
+  formatButtons.innerHTML = formats.map((format) => (
     `<button type="button" class="${state.format === format ? 'active' : ''}" data-format="${format}">${format}</button>`
   )).join('');
 
@@ -201,9 +180,23 @@ function renderControls() {
     `<button type="button" class="${effectiveOrientation === key ? 'active' : ''}" data-orientation="${key}" ${state.format === '66' && key === 'portrait' ? 'disabled' : ''}>${label}</button>`
   )).join('');
 
-  filmSelect.innerHTML = frames[state.format].map((film) => (
-    `<option value="${film}" ${state.film === film ? 'selected' : ''}>${filmDisplayName(film)}</option>`
-  )).join('');
+  renderFilmPicker(filmPicker, state, {
+    onManufacturer(manufacturerId) {
+      Object.assign(state, normalizeFilmSelection({ ...state, manufacturerId, modelId: null, versionId: null }));
+      renderControls();
+      void drawPreview();
+    },
+    onModel(modelId) {
+      Object.assign(state, normalizeFilmSelection({ ...state, modelId, versionId: null }));
+      renderControls();
+      void drawPreview();
+    },
+    onVersion(versionId) {
+      Object.assign(state, normalizeFilmSelection({ ...state, versionId }));
+      renderControls();
+      void drawPreview();
+    },
+  });
 }
 
 async function loadBitmapFromUrl(url) {
@@ -243,15 +236,29 @@ function cropSourceRect(source, targetRatio) {
 }
 
 async function drawPreview() {
+  const requestId = ++frameLoadRequestId;
   exportButton.disabled = true;
-  if (!state.sourceBitmap) return;
-
+  const selectedFilm = resolveFilm(state);
   const baseAperture = apertures[state.format];
-  previewTitle.textContent = `${state.format} · ${filmDisplayName(state.film)}`;
+  const versionNote = selectedFilm.versions.length > 1 ? ` · ${selectedFilm.label}` : '';
+  previewTitle.textContent = `${state.format} · ${selectedFilm.shortName}${versionNote}`;
   previewMeta.textContent = `${baseAperture.width} x ${baseAperture.height}`;
+  if (!state.sourceBitmap) return;
   setStatus('正在加载边框素材...');
 
-  state.frameBitmap = await loadBitmapFromUrl(frameUrl(state.format, state.film));
+  let nextFrame;
+  try {
+    nextFrame = await loadBitmapFromUrl(frameUrl());
+  } catch (error) {
+    if (requestId === frameLoadRequestId) setStatus(error.message);
+    return;
+  }
+  if (requestId !== frameLoadRequestId) {
+    nextFrame.close?.();
+    return;
+  }
+  state.frameBitmap?.close?.();
+  state.frameBitmap = nextFrame;
   const layout = effectiveLayout(state.frameBitmap);
   const aperture = layout.aperture;
   canvas.width = layout.outputWidth;
@@ -334,7 +341,7 @@ async function exportImage() {
   const link = document.createElement('a');
   const original = state.imageFile?.name?.replace(/\.[^.]+$/, '') || 'photo';
   link.href = url;
-  link.download = `${original}_${state.format}_${safeFilmName(state.film)}.${exportExtension(type)}`;
+  link.download = `${original}_${state.format}_${safeFilmName()}.${exportExtension(type)}`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -373,7 +380,7 @@ async function exportSixteenBitPng() {
     const blob = await runHighDepthExport({
       sourceBuffer,
       sourceType: state.imageFile.type,
-      frameUrl: frameUrl(state.format, state.film),
+      frameUrl: frameUrl(),
       aperture: layout.aperture,
       rotateFrame: layout.rotateFrame,
     });
@@ -381,7 +388,7 @@ async function exportSixteenBitPng() {
     const link = document.createElement('a');
     const original = state.imageFile?.name?.replace(/\.[^.]+$/, '') || 'photo';
     link.href = url;
-    link.download = `${original}_${state.format}_${safeFilmName(state.film)}_16bit.png`;
+    link.download = `${original}_${state.format}_${safeFilmName()}_16bit.png`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -395,10 +402,7 @@ async function exportSixteenBitPng() {
 formatButtons.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-format]');
   if (!button) return;
-  state.format = button.dataset.format;
-  if (!frames[state.format].includes(state.film)) {
-    state.film = frames[state.format][0];
-  }
+  Object.assign(state, normalizeFilmSelection({ ...state, format: button.dataset.format }));
   renderControls();
   await drawPreview();
 });
@@ -415,11 +419,6 @@ orientationButtons.addEventListener('click', async (event) => {
   if (!button || button.disabled) return;
   state.orientation = button.dataset.orientation;
   renderControls();
-  await drawPreview();
-});
-
-filmSelect.addEventListener('change', async () => {
-  state.film = filmSelect.value;
   await drawPreview();
 });
 
@@ -450,4 +449,5 @@ fileInput.addEventListener('change', async () => {
 exportButton.addEventListener('click', exportImage);
 
 renderControls();
+void drawPreview();
 setStatus('普通导出走 Canvas；16-bit PNG 会在浏览器本地用独立像素管线合成，PNG16 输入可保留 16-bit 像素精度。');
