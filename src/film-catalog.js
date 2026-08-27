@@ -17,16 +17,16 @@ const model = (modelId, manufacturerId, name, shortName, details, formats, packa
 
 export const filmCatalog = [
   model('100tmx', 'kodak', 'KODAK PROFESSIONAL T-MAX 100 Film', 'T-MAX 100', '黑白负片 · ISO 100', {
-    645: ['0'], 66: ['0'], 67: ['0'],
+    645: ['0'], 66: ['0'], 67: ['0'], 68: ['0'], 69: ['0'],
   }, 'packages/kodak-tmax-100.webp'),
   model('5294', 'kodak', 'KODAK EKTACHROME 100D Color Reversal Film 5294', 'EKTACHROME 100D 5294', '电影彩色反转片 · ISO 100', {
     135: ['0', '1'],
   }, 'packages/kodak-ektachrome-100d.webp'),
   model('e100', 'kodak', 'KODAK PROFESSIONAL EKTACHROME E100 Color Reversal Film', 'EKTACHROME E100', '彩色反转片 · ISO 100', {
-    645: ['0', '1'], 66: ['0', '1'], 67: ['0', '1'],
+    645: ['0', '1'], 66: ['0', '1'], 67: ['0', '1'], 68: ['0', '1'], 69: ['0', '1'],
   }, 'packages/kodak-ektachrome-e100.webp'),
   model('e100vs', 'kodak', 'KODAK PROFESSIONAL EKTACHROME E100VS Color Reversal Film', 'EKTACHROME E100VS', '彩色反转片 · ISO 100', {
-    135: ['0'], 645: ['0'], 66: ['0'], 67: ['0'],
+    135: ['0'], 645: ['0'], 66: ['0'], 67: ['0'], 68: ['0'], 69: ['0'],
   }, null),
   model('ektar100', 'kodak', 'KODAK PROFESSIONAL EKTAR 100 Film', 'EKTAR 100', '彩色负片 · ISO 100', {
     135: ['0'],
@@ -38,10 +38,10 @@ export const filmCatalog = [
     135: ['0'],
   }, 'packages/kodak-portra-160.webp'),
   model('portra400', 'kodak', 'KODAK PROFESSIONAL PORTRA 400 Film', 'PORTRA 400', '彩色负片 · ISO 400', {
-    645: ['0'], 66: ['0'], 67: ['0'],
+    645: ['0'], 66: ['0'], 67: ['0'], 68: ['0'], 69: ['0'],
   }, 'packages/kodak-portra-400.webp'),
   model('ultra100', 'kodak', 'KODAK PROFESSIONAL Ultra Color 100UC Film', 'Ultra Color 100UC', '彩色负片 · ISO 100', {
-    645: ['0'], 66: ['0'], 67: ['0'],
+    645: ['0'], 66: ['0'], 67: ['0'], 68: ['0'], 69: ['0'],
   }, null),
   model('ultramax400', 'kodak', 'KODAK ULTRAMAX 400 Film', 'ULTRAMAX 400', '彩色负片 · ISO 400', {
     135: ['0'],
@@ -50,16 +50,16 @@ export const filmCatalog = [
     135: ['0'],
   }, 'packages/fujifilm-fujicolor-100.webp'),
   model('rdpiii', 'fujifilm', 'FUJICHROME PROVIA 100F Professional', 'PROVIA 100F', '彩色反转片 · ISO 100', {
-    135: ['0'], 645: ['0'], 66: ['0'], 67: ['0'],
+    135: ['0'], 645: ['0'], 66: ['0'], 67: ['0'], 68: ['0'], 69: ['0'],
   }, 'packages/fujifilm-provia-100f.webp'),
   model('rvp100', 'fujifilm', 'FUJICHROME Velvia 100 Professional', 'Velvia 100', '彩色反转片 · ISO 100', {
     135: ['0'],
   }, 'packages/fujifilm-velvia-100.webp'),
   model('rvp50', 'fujifilm', 'FUJICHROME Velvia 50 Professional', 'Velvia 50', '彩色反转片 · ISO 50', {
-    135: ['0'], 645: ['0'], 66: ['0'], 67: ['0'],
+    135: ['0'], 645: ['0'], 66: ['0'], 67: ['0'], 68: ['0'], 69: ['0'],
   }, 'packages/fujifilm-velvia-50.webp'),
   model('cinestill800t', 'cinestill', 'CineStill 800Tungsten Color Negative Film', '800Tungsten', '电影彩色负片 · ISO 800', {
-    135: ['0', '1', '2'], 645: ['0'], 66: ['0'], 67: ['0'],
+    135: ['0', '1', '2'], 645: ['0'], 66: ['0'], 67: ['0'], 68: ['0'], 69: ['0'],
   }, 'packages/cinestill-800t.webp'),
   model('phoenix200ii', 'harman', 'HARMAN Phoenix II Color Film', 'Phoenix II', '彩色负片 · ISO 200', {
     135: ['0'],
@@ -86,7 +86,7 @@ export function getModels(format, manufacturerId) {
 }
 
 export function normalizeFilmSelection(selection) {
-  const format = ['135', '645', '66', '67'].includes(selection.format) ? selection.format : '67';
+  const format = ['135', '645', '66', '67', '68', '69'].includes(selection.format) ? selection.format : '67';
   const availableManufacturers = getManufacturers(format);
   const requestedModel = filmCatalog.find(
     (entry) => entry.modelId === selection.modelId && entry.formats[format],

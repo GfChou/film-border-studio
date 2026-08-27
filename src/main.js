@@ -2,13 +2,16 @@ import './styles.css';
 import { normalizeFilmSelection, resolveFilm } from './film-catalog.js';
 import { renderFilmPicker } from './film-picker.js';
 
-const formats = ['135', '645', '66', '67'];
+const formatFamilies = ['135', '120'];
+const mediumFormats = ['645', '66', '67', '68', '69'];
 
 const apertures = {
   '135': { width: 6000, height: 4000, x: 120, y: 820 },
   '645': { width: 6000, height: 4500, x: 240, y: 240 },
   '66': { width: 5500, height: 5500, x: 240, y: 240 },
   '67': { width: 7000, height: 5500, x: 240, y: 240 },
+  '68': { width: 8000, height: 5500, x: 240, y: 240 },
+  '69': { width: 9000, height: 5500, x: 240, y: 240 },
 };
 
 const qualityPresets = {
@@ -26,6 +29,7 @@ const state = {
   exportType: 'image/png',
   exportEngine: 'canvas',
   orientation: 'landscape',
+  last120Format: '67',
   imageFile: null,
   sourceBitmap: null,
   frameBitmap: null,
@@ -53,7 +57,10 @@ app.innerHTML = `
 
       <div class="control">
         <div class="section-title">画幅</div>
-        <div class="segmented" id="formatButtons"></div>
+        <div class="format-picker">
+          <div class="segmented format-family" id="formatFamilyButtons"></div>
+          <div class="segmented format-submenu" id="formatButtons"></div>
+        </div>
       </div>
 
       <div class="control">
@@ -100,6 +107,7 @@ app.innerHTML = `
   </div>
 `;
 
+const formatFamilyButtons = document.querySelector('#formatFamilyButtons');
 const formatButtons = document.querySelector('#formatButtons');
 const orientationButtons = document.querySelector('#orientationButtons');
 const filmPicker = document.querySelector('#filmPicker');
@@ -164,7 +172,12 @@ function effectiveLayout(frame) {
 }
 
 function renderControls() {
-  formatButtons.innerHTML = formats.map((format) => (
+  const activeFamily = state.format === '135' ? '135' : '120';
+  formatFamilyButtons.innerHTML = formatFamilies.map((family) => (
+    `<button type="button" class="${activeFamily === family ? 'active' : ''}" data-format-family="${family}">${family}</button>`
+  )).join('');
+  formatButtons.hidden = activeFamily !== '120';
+  formatButtons.innerHTML = mediumFormats.map((format) => (
     `<button type="button" class="${state.format === format ? 'active' : ''}" data-format="${format}">${format}</button>`
   )).join('');
 
@@ -399,9 +412,19 @@ async function exportSixteenBitPng() {
   }
 }
 
+formatFamilyButtons.addEventListener('click', async (event) => {
+  const button = event.target.closest('button[data-format-family]');
+  if (!button) return;
+  const format = button.dataset.formatFamily === '135' ? '135' : state.last120Format;
+  Object.assign(state, normalizeFilmSelection({ ...state, format }));
+  renderControls();
+  await drawPreview();
+});
+
 formatButtons.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-format]');
   if (!button) return;
+  state.last120Format = button.dataset.format;
   Object.assign(state, normalizeFilmSelection({ ...state, format: button.dataset.format }));
   renderControls();
   await drawPreview();

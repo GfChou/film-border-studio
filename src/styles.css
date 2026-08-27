@@ -104,6 +104,10 @@ button {
 
 .qualities { grid-template-columns: repeat(3, 1fr); }
 .orientation { grid-template-columns: repeat(2, 1fr); }
+.format-picker { display: grid; gap: 6px; }
+.format-family { grid-template-columns: repeat(2, 1fr); }
+.format-submenu { grid-template-columns: repeat(5, 1fr); }
+.format-submenu[hidden] { display: none; }
 
 .segmented button,
 .qualities button {

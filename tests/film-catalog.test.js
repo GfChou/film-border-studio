@@ -22,6 +22,16 @@ test('catalog exposes CineStill and E100 frame variants', () => {
   assert.deepEqual(e100.versions.map((version) => version.versionId), ['0', '1']);
 });
 
+test('catalog exposes every 67 master in 68 and 69 formats', () => {
+  const e10068 = getModels('68', 'kodak').find((model) => model.modelId === 'e100');
+  const e10069 = getModels('69', 'kodak').find((model) => model.modelId === 'e100');
+
+  assert.deepEqual(e10068.versions.map((version) => version.versionId), ['0', '1']);
+  assert.equal(e10068.versions[1].framePath, 'frames/68/e100-1.png');
+  assert.deepEqual(e10069.versions.map((version) => version.versionId), ['0', '1']);
+  assert.equal(e10069.versions[1].framePath, 'frames/69/e100-1.png');
+});
+
 test('format changes preserve a model when that model remains available', () => {
   const selection = normalizeFilmSelection({
     format: '645',
@@ -36,6 +46,20 @@ test('format changes preserve a model when that model remains available', () => 
     modelId: 'rdpiii',
     versionId: '0',
   });
+});
+
+test('68 and 69 are accepted as normalized formats', () => {
+  for (const format of ['68', '69']) {
+    const selection = normalizeFilmSelection({
+      format,
+      manufacturerId: 'fujifilm',
+      modelId: 'rdpiii',
+      versionId: '0',
+    });
+
+    assert.equal(selection.format, format);
+    assert.equal(selection.modelId, 'rdpiii');
+  }
 });
 
 test('format changes fall back deterministically when a model is unavailable', () => {
