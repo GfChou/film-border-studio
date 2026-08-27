@@ -11,4 +11,11 @@ They are not covered by the MIT License. No permission is granted to copy,
 redistribute, repackage, modify, sell, or use the assets outside this project
 without separate written permission from the asset owner.
 
+Manufacturer logos and product imagery under `public/brands/**` and
+`public/packages/**` are also excluded from the MIT License. Their names,
+trademarks, packaging, and imagery remain the property of Kodak, Fujifilm,
+CineStill, HARMAN, and their respective rights holders. They are included for
+product identification in the hosted interface and do not imply endorsement.
+Source URLs are recorded in `BRAND_ASSET_SOURCES.md`.
+
 The source code is licensed separately under the MIT License.

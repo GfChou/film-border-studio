@@ -27,7 +27,7 @@ export const filmCatalog = [
   }, 'packages/kodak-ektachrome-e100.webp'),
   model('e100vs', 'kodak', 'KODAK PROFESSIONAL EKTACHROME E100VS Color Reversal Film', 'EKTACHROME E100VS', '彩色反转片 · ISO 100', {
     135: ['0'], 645: ['0'], 66: ['0'], 67: ['0'],
-  }, 'packages/kodak-ektachrome-e100vs.webp'),
+  }, null),
   model('ektar100', 'kodak', 'KODAK PROFESSIONAL EKTAR 100 Film', 'EKTAR 100', '彩色负片 · ISO 100', {
     135: ['0'],
   }, 'packages/kodak-ektar-100.webp'),
@@ -42,7 +42,7 @@ export const filmCatalog = [
   }, 'packages/kodak-portra-400.webp'),
   model('ultra100', 'kodak', 'KODAK PROFESSIONAL Ultra Color 100UC Film', 'Ultra Color 100UC', '彩色负片 · ISO 100', {
     645: ['0'], 66: ['0'], 67: ['0'],
-  }, 'packages/kodak-ultra-color-100uc.webp'),
+  }, null),
   model('ultramax400', 'kodak', 'KODAK ULTRAMAX 400 Film', 'ULTRAMAX 400', '彩色负片 · ISO 400', {
     135: ['0'],
   }, 'packages/kodak-ultramax-400.webp'),
