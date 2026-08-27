@@ -122,13 +122,14 @@ const previewMeta = document.querySelector('#previewMeta');
 const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d', { colorSpace: 'display-p3' }) || canvas.getContext('2d');
 let frameLoadRequestId = 0;
+const frameAssetVersion = '20260827-reviewed-v4';
 
 function setStatus(message) {
   statusEl.textContent = message;
 }
 
 function frameUrl() {
-  return `${import.meta.env.BASE_URL}${resolveFilm(state).framePath}`;
+  return `${import.meta.env.BASE_URL}${resolveFilm(state).framePath}?v=${frameAssetVersion}`;
 }
 
 function safeFilmName() {
