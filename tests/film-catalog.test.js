@@ -27,8 +27,8 @@ test('catalog resolves illustrated package art for the active film format', () =
   const provia120 = getModels('67', 'fujifilm').find((model) => model.modelId === 'rdpiii');
   const ultra120 = getModels('67', 'kodak').find((model) => model.modelId === 'ultra100');
 
-  assert.equal(provia135.packageImage, 'packages/illustrated/135/provia100f.png');
-  assert.equal(provia120.packageImage, 'packages/illustrated/120/provia100f.png');
+  assert.equal(provia135.packageImage, 'packages/hand-painted/135/provia100f.png');
+  assert.equal(provia120.packageImage, 'packages/hand-painted/120/provia100f.png');
   assert.equal(ultra120.packageImage, null);
 });
 

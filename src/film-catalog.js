@@ -6,7 +6,7 @@ export const manufacturers = [
 ];
 
 const packageArt = (filename, groups) => Object.fromEntries(
-  groups.map((group) => [group, `packages/illustrated/${group}/${filename}.png`]),
+  groups.map((group) => [group, `packages/hand-painted/${group}/${filename}.png`]),
 );
 
 const model = (modelId, manufacturerId, name, shortName, details, formats, packageImages) => ({
